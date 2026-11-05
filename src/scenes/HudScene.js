@@ -59,7 +59,7 @@ export default class HudScene extends Phaser.Scene {
     const player = game.player;
 
     // Tape counter (H:MM:SS since run start).
-    const s = Math.max(0, Math.floor((time - game.runStartedAt) / 1000));
+    const s = game.runStartedAt === null ? 0 : Math.max(0, Math.floor((time - game.runStartedAt) / 1000));
     const pad = (n) => String(n).padStart(2, '0');
     this.counter.setText(`${Math.floor(s / 3600)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`);
     this.play.setVisible(player.dead || Math.floor(time / 600) % 4 !== 0);
@@ -67,9 +67,9 @@ export default class HudScene extends Phaser.Scene {
     this.drawInventory(player);
 
     if (this.debug) {
-      const room = game.floor.roomAt(player.x, player.y);
+      const area = game.floor.areaAt(player.x, player.y);
       const light = (game.playerLight ?? 0).toFixed(2);
-      this.debug.setText(`seed ${game.seed}  hits ${player.hits}  light ${light}  ${room ? room.template.label : 'corridor'}`);
+      this.debug.setText(`${area?.name || '-'}  hits ${player.hits}  light ${light}`);
     }
   }
 

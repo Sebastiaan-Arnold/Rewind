@@ -54,6 +54,11 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     const sees = !player.dead && dist < sightRange && floor.hasLineOfSight(this.x, this.y, player.x, player.y);
     if (sees) this.lastSeen = { x: player.x, y: player.y };
 
+    if (floor.isPitAt(this.x, this.y)) {
+      this.fall();
+      return;
+    }
+
     switch (this.ai) {
       case 'stunned':
         this.body.velocity.scale(0.85); // knockback decay
@@ -164,6 +169,21 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.aiUntil = time + ZOMBIE.stunMs;
     this.animate(time, 0);
     if (this.hp <= 0) this.die(fromAngle);
+  }
+
+  fall() {
+    this.dead = true;
+    this.body.enable = false;
+    this.eyes.setVisible(false);
+    this.scene.tweens.add({
+      targets: this,
+      scale: 0.15,
+      angle: this.angle + 200,
+      alpha: 0,
+      duration: 600,
+      ease: 'Quad.easeIn',
+      onComplete: () => this.destroy(),
+    });
   }
 
   die(fromAngle) {

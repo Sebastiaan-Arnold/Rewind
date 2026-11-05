@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import { makeCharacterTextures } from '../art/characters.js';
-import { seedFromUrl } from '../utils/params.js';
-import { randomSeed } from '../utils/rng.js';
+import { LEVELS } from '../config.js';
+import { params } from '../utils/params.js';
 
-/** Loads shared assets and the room manifest, then starts the first run. */
+/** Loads shared assets and levels, then opens the title screen. */
 export default class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
@@ -11,20 +11,13 @@ export default class BootScene extends Phaser.Scene {
 
   preload() {
     this.load.image('tiles', 'assets/tiles/mall-placeholder.png');
-
-    // Queue every room listed in the manifest as soon as the manifest loads.
-    this.load.json('room-list', 'rooms/rooms.json');
-    this.load.on('filecomplete-json-room-list', (_key, _type, data) => {
-      for (const name of data.rooms) {
-        this.load.tilemapTiledJSON(`room:${name}`, `rooms/${name}.json`);
-      }
-    });
+    for (const name of LEVELS) this.load.tilemapTiledJSON(`level:${name}`, `levels/${name}.json`);
   }
 
   create() {
     makeCharacterTextures(this);
-    const names = this.cache.json.get('room-list').rooms;
-    this.registry.set('roomKeys', names.map((n) => `room:${n}`));
-    this.scene.start('Game', { seed: seedFromUrl() ?? randomSeed() });
+    // `?play` skips the title screen during development.
+    if (params.has('play')) this.scene.start('Game', { level: LEVELS[0] });
+    else this.scene.start('Title');
   }
 }

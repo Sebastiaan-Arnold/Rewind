@@ -11,11 +11,8 @@ export const VIEW_H = 270;
 /** Tile size in pixels. */
 export const TILE = 16;
 
-/** Global tile IDs used by the floor builder (tileset index + 1). */
-export const TILES = {
-  FLOOR: 1,
-  WALL: 2,
-};
+/** Levels in play order; each is public/levels/<name>.json. */
+export const LEVELS = ['mall'];
 
 export const PLAYER = {
   speed: 95,
@@ -55,13 +52,6 @@ export const STEALTH = {
   base: 0.35,
   gain: 1.6,
   minFactor: 0.35,
-};
-
-export const FLOOR_GEN = {
-  corridorMin: 2, // tiles
-  corridorMax: 5, // tiles
-  padding: 2, // tiles of empty space around the floor
-  safeRadius: 110, // no enemy spawns within this distance of the player start
 };
 
 export const FLASHLIGHT = {
