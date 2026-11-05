@@ -31,11 +31,14 @@ npm run dev
 
 ## Controls
 
-| Input       | Action          |
-| ----------- | --------------- |
-| W A S D     | Move            |
-| Mouse       | Aim             |
-| Left mouse  | Attack (crowbar) |
+| Input             | Action                          |
+| ----------------- | ------------------------------- |
+| W A S D           | Move                            |
+| Mouse             | Aim                             |
+| Left mouse        | Use item in hand                |
+| 1 2 3 / Wheel     | Select inventory slot           |
+
+Only the item in hand is active. The flashlight lights the way and its burst blinds enemies; switching to the crowbar means going dark.
 
 ## Project structure
 
@@ -45,11 +48,14 @@ public/
   rooms/            Tiled room maps and the room manifest (rooms.json)
 src/
   config.js         Gameplay tuning values
+  art/              Palette, pixel buffer and procedural sprites
   scenes/           Boot, Game and HUD scenes
   world/            Room parsing, floor generation and floor construction
-  entities/         Player, enemies and weapons
-  fx/               VHS post-processing filter
-  utils/            Seeded RNG, URL parameters, placeholder art
+  lighting/         Lightmap and shadowed light shapes
+  entities/         Player and enemies
+  items/            Inventory and item behaviour
+  fx/               VHS filter, particles and death rewind
+  utils/            Seeded RNG and URL parameters
 tools/              Asset generation scripts
 ```
 
@@ -66,8 +72,10 @@ Rooms are authored in [Tiled](https://www.mapeditor.org) and saved as JSON in `p
 | `door`   | Rectangle on the outer wall, 2 tiles wide, painted as wall | — |
 | `enemy`  | Point                              | `kind` (string): `zombie` |
 | `player` | Point (used when the room is first) | —                      |
+| `light`  | Point                              | `color` (color), `radius` (int), `intensity` (float), `flicker` (`none` \| `subtle` \| `broken`), `glow` (bool) |
 
-- **Tile properties:** `collides` (solid) and `opaque` (blocks line of sight).
+- **Map property:** `ambient` (color) sets the room's base light level. Near-black makes a dark room.
+- **Tile properties:** `collides` (solid) and `opaque` (blocks light and line of sight).
 
 Register a new room by adding its file name to `public/rooms/rooms.json`. The generator opens only the doors it connects; all others remain closed.
 

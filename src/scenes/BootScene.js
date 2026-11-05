@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { makePlaceholderTextures } from '../utils/placeholderArt.js';
+import { makeCharacterTextures } from '../art/characters.js';
 import { seedFromUrl } from '../utils/params.js';
 import { randomSeed } from '../utils/rng.js';
 
@@ -22,7 +22,7 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
-    makePlaceholderTextures(this);
+    makeCharacterTextures(this);
     const names = this.cache.json.get('room-list').rooms;
     this.registry.set('roomKeys', names.map((n) => `room:${n}`));
     this.scene.start('Game', { seed: seedFromUrl() ?? randomSeed() });

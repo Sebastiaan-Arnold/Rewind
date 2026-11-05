@@ -11,6 +11,7 @@
  */
 
 import Phaser from 'phaser';
+import { FX } from '../config.js';
 
 const FRAGMENT_SHADER = `
 #pragma phaserTemplate(shaderName)
@@ -128,10 +129,16 @@ export default class VhsEffect {
     this.controller = scene.cameras.main.filters.external.add(new VhsController(scene.cameras.main));
   }
 
-  /** Sets degradation from hits taken (0 = baseline, 3 = maximum). */
+  /** Sets degradation from hits taken, using the curve in FX.damageLevels. */
   setDamage(hits) {
-    this.level = Math.min(hits, 3) / 3;
+    const levels = FX.damageLevels;
+    this.level = levels[Math.min(hits, levels.length - 1)];
     this.spike = 1;
+  }
+
+  /** Adds a short burst without changing the damage level. */
+  kick(amount) {
+    this.spike = Math.max(this.spike, amount);
   }
 
   /** Holds the spike at a minimum value (used on death). */

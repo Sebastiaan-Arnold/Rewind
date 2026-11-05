@@ -1,7 +1,7 @@
 {
  "compressionlevel": -1,
  "width": 14,
- "height": 10,
+ "height": 11,
  "infinite": false,
  "orientation": "orthogonal",
  "renderorder": "right-down",
@@ -11,8 +11,13 @@
  "type": "map",
  "version": "1.10",
  "nextlayerid": 3,
- "nextobjectid": 6,
+ "nextobjectid": 9,
  "properties": [
+  {
+   "name": "ambient",
+   "type": "color",
+   "value": "#ff151722"
+  },
   {
    "name": "label",
    "type": "string",
@@ -25,7 +30,7 @@
    "name": "ground",
    "type": "tilelayer",
    "width": 14,
-   "height": 10,
+   "height": 11,
    "x": 0,
    "y": 0,
    "opacity": 1,
@@ -36,14 +41,28 @@
     2,
     2,
     2,
+    16,
+    16,
+    16,
+    16,
     2,
     2,
     2,
     2,
     2,
     2,
-    2,
-    2,
+    19,
+    19,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    5,
+    19,
+    19,
     2,
     2,
     5,
@@ -90,28 +109,14 @@
     2,
     5,
     5,
+    19,
+    19,
     5,
     5,
     5,
     5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    2,
-    2,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
-    5,
+    19,
+    19,
     5,
     5,
     2,
@@ -125,8 +130,8 @@
     5,
     5,
     5,
-    5,
-    5,
+    20,
+    20,
     5,
     2,
     2,
@@ -142,6 +147,20 @@
     7,
     7,
     7,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    9,
+    1,
+    1,
+    1,
+    24,
+    1,
     2,
     2,
     1,
@@ -219,7 +238,7 @@
      "name": "",
      "type": "door",
      "x": 96,
-     "y": 144,
+     "y": 160,
      "width": 32,
      "height": 16,
      "rotation": 0,
@@ -246,6 +265,113 @@
      "height": 32,
      "rotation": 0,
      "visible": true
+    },
+    {
+     "id": 6,
+     "name": "",
+     "type": "light",
+     "x": 120,
+     "y": 30.4,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true,
+     "properties": [
+      {
+       "name": "color",
+       "type": "color",
+       "value": "#ffff4fa3"
+      },
+      {
+       "name": "radius",
+       "type": "int",
+       "value": 88
+      },
+      {
+       "name": "intensity",
+       "type": "float",
+       "value": 0.8
+      },
+      {
+       "name": "flicker",
+       "type": "string",
+       "value": "subtle"
+      },
+      {
+       "name": "glow",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "",
+     "type": "light",
+     "x": 72,
+     "y": 96,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true,
+     "properties": [
+      {
+       "name": "color",
+       "type": "color",
+       "value": "#ffd6e8ff"
+      },
+      {
+       "name": "radius",
+       "type": "int",
+       "value": 84
+      },
+      {
+       "name": "intensity",
+       "type": "float",
+       "value": 0.6
+      },
+      {
+       "name": "flicker",
+       "type": "string",
+       "value": "broken"
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "",
+     "type": "light",
+     "x": 120,
+     "y": 145.6,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true,
+     "properties": [
+      {
+       "name": "color",
+       "type": "color",
+       "value": "#ff47f0ff"
+      },
+      {
+       "name": "radius",
+       "type": "int",
+       "value": 56
+      },
+      {
+       "name": "intensity",
+       "type": "float",
+       "value": 0.35
+      },
+      {
+       "name": "flicker",
+       "type": "string",
+       "value": "none"
+      }
+     ]
     }
    ]
   }
@@ -255,10 +381,10 @@
    "firstgid": 1,
    "name": "mall",
    "image": "../assets/tiles/mall-placeholder.png",
-   "imagewidth": 64,
-   "imageheight": 32,
-   "columns": 4,
-   "tilecount": 8,
+   "imagewidth": 128,
+   "imageheight": 48,
+   "columns": 8,
+   "tilecount": 24,
    "tilewidth": 16,
    "tileheight": 16,
    "margin": 0,
@@ -304,6 +430,116 @@
      "properties": [
       {
        "name": "collides",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      },
+      {
+       "name": "opaque",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      },
+      {
+       "name": "opaque",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      },
+      {
+       "name": "opaque",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 18,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 19,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": 22,
+     "properties": [
+      {
+       "name": "collides",
+       "type": "bool",
+       "value": true
+      },
+      {
+       "name": "opaque",
        "type": "bool",
        "value": true
       }

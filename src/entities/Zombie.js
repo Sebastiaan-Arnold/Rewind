@@ -7,21 +7,32 @@
  *   windup  - telegraphed attack (red flash); connects if the player stays in reach
  *   recover - post-attack cooldown
  *   stunned - knocked back after taking damage
+ *   blinded - dazed by the flashlight burst; staggers aimlessly
  */
 import Phaser from 'phaser';
-import { ZOMBIE } from '../config.js';
+import { ZOMBIE, DEPTH } from '../config.js';
+
+const STEP_LENGTH = 5;
 
 export default class Zombie extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
-    super(scene, x, y, 'zombie');
+    super(scene, x, y, 'zombie', 'walk-0');
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setDepth(9);
+    this.setDepth(DEPTH.enemies);
 
     const r = ZOMBIE.radius;
     this.body.setCircle(r, this.width / 2 - r, this.height / 2 - r);
     this.body.pushable = false;
     this.hitRadius = r;
+
+    // Faintly glowing eyes stay visible in the dark.
+    this.eyes = scene.add
+      .image(x, y, 'fx-eyes')
+      .setTint(0xf2ffb4)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(DEPTH.emissive)
+      .setAlpha(0.55);
 
     this.hp = ZOMBIE.hp;
     this.dead = false;
@@ -29,21 +40,36 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.aiUntil = 0;
     this.flashUntil = 0;
     this.lastSeen = null;
+    this.walked = Math.random() * 20;
     this.speed = ZOMBIE.speed * Phaser.Math.FloatBetween(0.85, 1.15); // per-instance variance
     this.setRotation(Phaser.Math.FloatBetween(-Math.PI, Math.PI));
   }
 
-  update(time, player, floor) {
+  update(time, delta, player, floor) {
     if (this.dead) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-    const sees = !player.dead && dist < ZOMBIE.sightRange && floor.hasLineOfSight(this.x, this.y, player.x, player.y);
+    const sees =
+      this.ai !== 'blinded' &&
+      !player.dead &&
+      dist < ZOMBIE.sightRange &&
+      floor.hasLineOfSight(this.x, this.y, player.x, player.y);
     if (sees) this.lastSeen = { x: player.x, y: player.y };
 
     switch (this.ai) {
       case 'stunned':
         this.body.velocity.scale(0.85); // knockback decay
         if (time >= this.aiUntil) this.afterAction(sees, time);
+        break;
+
+      case 'blinded':
+        if (time >= this.aiUntil) {
+          this.startSearch(time);
+        } else if (Math.random() < 0.04) {
+          const a = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
+          this.setVelocity(Math.cos(a) * ZOMBIE.blindSpeed, Math.sin(a) * ZOMBIE.blindSpeed);
+        }
+        this.rotation += Math.sin(time * 0.02) * 0.04;
         break;
 
       case 'windup':
@@ -98,7 +124,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    this.updateTint(time);
+    this.animate(time, delta);
   }
 
   afterAction(sees, time) {
@@ -121,8 +147,13 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, x, y));
   }
 
-  /** Hit flash (white) takes priority over the wind-up telegraph (red). */
-  updateTint(time) {
+  animate(time, delta) {
+    this.walked += (this.body.velocity.length() * delta) / 1000;
+    if (this.ai === 'windup') this.setFrame('windup');
+    else if (this.ai === 'blinded') this.setFrame('blind');
+    else this.setFrame(`walk-${Math.floor(this.walked / STEP_LENGTH) % 4}`);
+
+    // Hit flash (white) takes priority over the wind-up telegraph (red).
     if (time < this.flashUntil) {
       this.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     } else if (this.ai === 'windup' && Math.floor(time / 60) % 2 === 0) {
@@ -130,6 +161,17 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.clearTint();
     }
+
+    const eyeX = this.x + Math.cos(this.rotation) * 2;
+    const eyeY = this.y + Math.sin(this.rotation) * 2;
+    this.eyes.setPosition(eyeX, eyeY).setRotation(this.rotation).setVisible(this.ai !== 'blinded');
+  }
+
+  blind(until) {
+    if (this.dead) return;
+    this.ai = 'blinded';
+    this.aiUntil = until;
+    this.setVelocity(0, 0);
   }
 
   takeHit(fromAngle, damage, knockback) {
@@ -140,15 +182,16 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(Math.cos(fromAngle) * knockback, Math.sin(fromAngle) * knockback);
     this.ai = 'stunned';
     this.aiUntil = time + ZOMBIE.stunMs;
-    this.updateTint(time);
+    this.animate(time, 0);
     if (this.hp <= 0) this.die(fromAngle);
   }
 
   die(fromAngle) {
     this.dead = true;
     this.body.enable = false;
+    this.eyes.setVisible(false);
+    this.scene.effects.splatter(this.x, this.y, fromAngle);
     this.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
-    // Death animation, then removal.
     this.scene.tweens.add({
       targets: this,
       x: this.x + Math.cos(fromAngle) * 10,
@@ -161,5 +204,10 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
       onComplete: () => this.destroy(),
     });
     this.scene.time.delayedCall(70, () => this.active && this.setTint(0x2f3f27).setTintMode(Phaser.TintModes.FILL));
+  }
+
+  destroy(fromScene) {
+    this.eyes?.destroy();
+    super.destroy(fromScene);
   }
 }

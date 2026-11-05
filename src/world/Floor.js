@@ -3,7 +3,7 @@
  * rooms stamped in, connecting doors opened and corridors carved.
  */
 
-import { TILE, TILES, FLOOR_GEN } from '../config.js';
+import { TILE, TILES, FLOOR_GEN, LIGHTING } from '../config.js';
 
 export default class Floor {
   constructor(scene, plan) {
@@ -50,6 +50,7 @@ export default class Floor {
     }
 
     this.layer.setCollision([...this.solid]);
+    this.buildOpacityGrid();
 
     // Spawn points in world space.
     const start = plan.rooms[0];
@@ -61,6 +62,67 @@ export default class Floor {
         .map((s) => ({ ...s, x: room.x * TILE + s.x, y: room.y * TILE + s.y }))
         .filter((s) => Math.hypot(s.x - this.playerSpawn.x, s.y - this.playerSpawn.y) > FLOOR_GEN.safeRadius),
     );
+
+    // Lighting data in world space.
+    this.lights = plan.rooms.flatMap((room) =>
+      room.template.lights.map((l) => ({ ...l, x: room.x * TILE + l.x, y: room.y * TILE + l.y })),
+    );
+    this.ambientAreas = [
+      ...plan.corridors.map((c) => ({
+        ...scaleRect(c.bounds),
+        color: darker(c.a.room.template.ambient, c.b.room.template.ambient, LIGHTING.corridorAmbient),
+      })),
+      ...plan.rooms.map((r) => ({
+        ...scaleRect({ x: r.x, y: r.y, w: r.template.w, h: r.template.h }),
+        color: r.template.ambient,
+      })),
+    ];
+  }
+
+  buildOpacityGrid() {
+    const { width, height } = this.plan;
+    this.opacity = new Uint8Array(width * height);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const tile = this.layer.getTileAt(x, y);
+        if (tile && this.opaque.has(tile.index)) this.opacity[y * width + x] = 1;
+      }
+    }
+  }
+
+  isOpaqueTile(tx, ty) {
+    const { width, height } = this.plan;
+    if (tx < 0 || ty < 0 || tx >= width || ty >= height) return true;
+    return this.opacity[ty * width + tx] === 1;
+  }
+
+  /**
+   * Grid ray cast (DDA). Returns the distance in pixels from (x, y) along the
+   * unit direction (dx, dy) to the first opaque tile, capped at maxDist.
+   */
+  castRay(x, y, dx, dy, maxDist) {
+    let tx = Math.floor(x / TILE);
+    let ty = Math.floor(y / TILE);
+    const stepX = dx < 0 ? -1 : 1;
+    const stepY = dy < 0 ? -1 : 1;
+    const deltaX = dx === 0 ? Infinity : Math.abs(TILE / dx);
+    const deltaY = dy === 0 ? Infinity : Math.abs(TILE / dy);
+    let sideX = dx === 0 ? Infinity : (dx < 0 ? x - tx * TILE : (tx + 1) * TILE - x) / Math.abs(dx);
+    let sideY = dy === 0 ? Infinity : (dy < 0 ? y - ty * TILE : (ty + 1) * TILE - y) / Math.abs(dy);
+    for (;;) {
+      let dist;
+      if (sideX < sideY) {
+        dist = sideX;
+        sideX += deltaX;
+        tx += stepX;
+      } else {
+        dist = sideY;
+        sideY += deltaY;
+        ty += stepY;
+      }
+      if (dist >= maxDist) return maxDist;
+      if (this.isOpaqueTile(tx, ty)) return dist;
+    }
   }
 
   put(index, x, y) {
@@ -76,13 +138,8 @@ export default class Floor {
   /** True if no opaque tile lies on the segment between the two points. */
   hasLineOfSight(x1, y1, x2, y2) {
     const dist = Math.hypot(x2 - x1, y2 - y1);
-    const steps = Math.ceil(dist / 4);
-    for (let i = 1; i < steps; i++) {
-      const t = i / steps;
-      const tile = this.layer.getTileAtWorldXY(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t);
-      if (tile && this.opaque.has(tile.index)) return false;
-    }
-    return true;
+    if (dist < 1) return true;
+    return this.castRay(x1, y1, (x2 - x1) / dist, (y2 - y1) / dist, dist) >= dist;
   }
 
   /** Returns the room containing the point, or null for corridors. */
@@ -93,4 +150,14 @@ export default class Floor {
       this.plan.rooms.find((r) => x >= r.x && x < r.x + r.template.w && y >= r.y && y < r.y + r.template.h) ?? null
     );
   }
+}
+
+function scaleRect(r) {
+  return { x: r.x * TILE, y: r.y * TILE, w: r.w * TILE, h: r.h * TILE };
+}
+
+/** Returns the darkest of the given colours (by luminance). */
+function darker(...colors) {
+  const lum = (c) => ((c >> 16) & 255) * 0.3 + ((c >> 8) & 255) * 0.59 + (c & 255) * 0.11;
+  return colors.reduce((a, b) => (lum(b) < lum(a) ? b : a));
 }
