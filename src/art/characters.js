@@ -3,7 +3,7 @@
  * Characters face right (angle 0) and are rotated at runtime.
  *
  * Player frames:  <pose>-<step>, pose = empty | light | melee, step = 0..3
- * Zombie frames:  walk-<step>, windup, blind
+ * Zombie frames:  walk-<step>, windup
  */
 import { PixelBuffer, mix } from './pixel.js';
 import { P } from './palette.js';
@@ -80,11 +80,9 @@ function drawZombie(frame, step = 0) {
   b.ellipse(8 + s, 6.2, 1.6, 1.2, P.zShirtDark);
   b.ellipse(8 - s, 9.8, 1.6, 1.2, P.zShirtDark);
 
-  // Arms reach forward; wind-up pulls them back, blind raises them to the face.
-  let reach = [12.6 + s * 0.5, 12.6 - s * 0.5];
-  let spread = [4.6, 11.4];
-  if (frame === 'windup') reach = [9.5, 9.5];
-  if (frame === 'blind') { reach = [10.6, 10.6]; spread = [6.4, 9.6]; }
+  // Arms reach forward; the wind-up pulls them back.
+  const reach = frame === 'windup' ? [9.5, 9.5] : [12.6 + s * 0.5, 12.6 - s * 0.5];
+  const spread = [4.6, 11.4];
   [0, 1].forEach((i) => {
     b.line(7.5, spread[i] + (i ? 0.6 : -0.6), reach[i] - 1, spread[i], P.zShirt);
     b.ellipse(reach[i], spread[i], 1.2, 1.1, P.zSkin);
@@ -94,7 +92,7 @@ function drawZombie(frame, step = 0) {
   b.set(6, 6, P.zShirtDark).set(7, 10, P.zShirtDark).set(5, 9, P.zShirtDark);
   b.ellipse(8.8, 8, 2.4, 2.4, P.zSkin);
   b.set(8, 7, P.zSkinDark).set(7, 9, P.zSkinDark);
-  if (frame !== 'blind') b.set(10, 7, P.zEye).set(10, 9, P.zEye);
+  b.set(10, 7, P.zEye).set(10, 9, P.zEye);
 
   return b.rim(0.2).outline(P.ink);
 }
@@ -169,7 +167,6 @@ export function makeCharacterTextures(scene) {
   const zombieFrames = {};
   for (let i = 0; i < 4; i++) zombieFrames[`walk-${i}`] = drawZombie('walk', i);
   zombieFrames.windup = drawZombie('windup');
-  zombieFrames.blind = drawZombie('blind');
   addSheet(scene, 'zombie', zombieFrames);
 
   addImage(scene, 'held-crowbar', drawCrowbar());

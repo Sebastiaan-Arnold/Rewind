@@ -136,11 +136,6 @@ export default class VhsEffect {
     this.spike = 1;
   }
 
-  /** Adds a short burst without changing the damage level. */
-  kick(amount) {
-    this.spike = Math.max(this.spike, amount);
-  }
-
   /** Holds the spike at a minimum value (used on death). */
   hold(amount) {
     this.holdSpike = amount;

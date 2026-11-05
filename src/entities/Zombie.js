@@ -7,7 +7,9 @@
  *   windup  - telegraphed attack (red flash); connects if the player stays in reach
  *   recover - post-attack cooldown
  *   stunned - knocked back after taking damage
- *   blinded - dazed by the flashlight burst; staggers aimlessly
+ *
+ * Detection range is supplied each frame by the scene and depends on how
+ * visible the player is (light level, flashlight).
  */
 import Phaser from 'phaser';
 import { ZOMBIE, DEPTH } from '../config.js';
@@ -45,31 +47,17 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.setRotation(Phaser.Math.FloatBetween(-Math.PI, Math.PI));
   }
 
-  update(time, delta, player, floor) {
+  update(time, delta, player, floor, sightRange) {
     if (this.dead) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-    const sees =
-      this.ai !== 'blinded' &&
-      !player.dead &&
-      dist < ZOMBIE.sightRange &&
-      floor.hasLineOfSight(this.x, this.y, player.x, player.y);
+    const sees = !player.dead && dist < sightRange && floor.hasLineOfSight(this.x, this.y, player.x, player.y);
     if (sees) this.lastSeen = { x: player.x, y: player.y };
 
     switch (this.ai) {
       case 'stunned':
         this.body.velocity.scale(0.85); // knockback decay
         if (time >= this.aiUntil) this.afterAction(sees, time);
-        break;
-
-      case 'blinded':
-        if (time >= this.aiUntil) {
-          this.startSearch(time);
-        } else if (Math.random() < 0.04) {
-          const a = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
-          this.setVelocity(Math.cos(a) * ZOMBIE.blindSpeed, Math.sin(a) * ZOMBIE.blindSpeed);
-        }
-        this.rotation += Math.sin(time * 0.02) * 0.04;
         break;
 
       case 'windup':
@@ -150,7 +138,6 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
   animate(time, delta) {
     this.walked += (this.body.velocity.length() * delta) / 1000;
     if (this.ai === 'windup') this.setFrame('windup');
-    else if (this.ai === 'blinded') this.setFrame('blind');
     else this.setFrame(`walk-${Math.floor(this.walked / STEP_LENGTH) % 4}`);
 
     // Hit flash (white) takes priority over the wind-up telegraph (red).
@@ -164,14 +151,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     const eyeX = this.x + Math.cos(this.rotation) * 2;
     const eyeY = this.y + Math.sin(this.rotation) * 2;
-    this.eyes.setPosition(eyeX, eyeY).setRotation(this.rotation).setVisible(this.ai !== 'blinded');
-  }
-
-  blind(until) {
-    if (this.dead) return;
-    this.ai = 'blinded';
-    this.aiUntil = until;
-    this.setVelocity(0, 0);
+    this.eyes.setPosition(eyeX, eyeY).setRotation(this.rotation);
   }
 
   takeHit(fromAngle, damage, knockback) {
