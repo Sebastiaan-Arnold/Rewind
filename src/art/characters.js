@@ -3,7 +3,7 @@
  * Characters face right (angle 0) and are rotated at runtime.
  *
  * Player frames:  <pose>-<step>, pose = empty | light | melee, step = 0..3
- * Zombie frames:  walk-<step>, windup
+ * Zombie frames:  walk-<step>, windup  (textures zombie-0 .. zombie-3, one per outfit)
  */
 import { PixelBuffer, mix, noise } from './pixel.js';
 import { P } from './palette.js';
@@ -73,24 +73,32 @@ function drawPlayer(pose, step) {
 
 // ------------------------------------------------------------------ zombie
 
-function drawZombie(frame, step = 0) {
+/** Zombie outfits: shopper, security guard, store employee, teenager. */
+const OUTFITS = [
+  { skin: P.zSkin, shirt: P.zShirt, dark: P.zShirtDark },
+  { skin: 0x92a07c, shirt: 0x2c3a5a, dark: 0x1c2640 },
+  { skin: 0x85987a, shirt: 0x8a2f2f, dark: 0x5a1f1f },
+  { skin: 0x97a882, shirt: 0x2f7f7a, dark: 0x1f5552 },
+];
+
+function drawZombie(frame, step = 0, outfit = OUTFITS[0]) {
   const b = new PixelBuffer(FRAME, FRAME);
   const s = STRIDE[step] * 0.6;
 
-  b.ellipse(8 + s, 6.2, 1.6, 1.2, P.zShirtDark);
-  b.ellipse(8 - s, 9.8, 1.6, 1.2, P.zShirtDark);
+  b.ellipse(8 + s, 6.2, 1.6, 1.2, outfit.dark);
+  b.ellipse(8 - s, 9.8, 1.6, 1.2, outfit.dark);
 
   // Arms reach forward; the wind-up pulls them back.
   const reach = frame === 'windup' ? [9.5, 9.5] : [12.6 + s * 0.5, 12.6 - s * 0.5];
   const spread = [4.6, 11.4];
   [0, 1].forEach((i) => {
-    b.line(7.5, spread[i] + (i ? 0.6 : -0.6), reach[i] - 1, spread[i], P.zShirt);
-    b.ellipse(reach[i], spread[i], 1.2, 1.1, P.zSkin);
+    b.line(7.5, spread[i] + (i ? 0.6 : -0.6), reach[i] - 1, spread[i], outfit.shirt);
+    b.ellipse(reach[i], spread[i], 1.2, 1.1, outfit.skin);
   });
 
-  b.ellipse(7.4, 8, 2.9, 4.6, P.zShirt);
-  b.set(6, 6, P.zShirtDark).set(7, 10, P.zShirtDark).set(5, 9, P.zShirtDark);
-  b.ellipse(8.8, 8, 2.4, 2.4, P.zSkin);
+  b.ellipse(7.4, 8, 2.9, 4.6, outfit.shirt);
+  b.set(6, 6, outfit.dark).set(7, 10, outfit.dark).set(5, 9, outfit.dark);
+  b.ellipse(8.8, 8, 2.4, 2.4, outfit.skin);
   b.set(8, 7, P.zSkinDark).set(7, 9, P.zSkinDark);
   b.set(10, 7, P.zEye).set(10, 9, P.zEye);
 
@@ -227,10 +235,12 @@ export function makeCharacterTextures(scene) {
   }
   addSheet(scene, 'player', playerFrames);
 
-  const zombieFrames = {};
-  for (let i = 0; i < 4; i++) zombieFrames[`walk-${i}`] = drawZombie('walk', i);
-  zombieFrames.windup = drawZombie('windup');
-  addSheet(scene, 'zombie', zombieFrames);
+  OUTFITS.forEach((outfit, v) => {
+    const zombieFrames = {};
+    for (let i = 0; i < 4; i++) zombieFrames[`walk-${i}`] = drawZombie('walk', i, outfit);
+    zombieFrames.windup = drawZombie('windup', 0, outfit);
+    addSheet(scene, `zombie-${v}`, zombieFrames);
+  });
 
   const crtFrames = {};
   for (let i = 0; i < 4; i++) crtFrames[`static-${i}`] = drawCrt(i);

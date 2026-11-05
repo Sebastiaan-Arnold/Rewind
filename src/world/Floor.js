@@ -1,8 +1,8 @@
 /**
- * The playable level: tilemap, collision, opacity and pit grids, lighting
- * data and spatial queries.
+ * The playable level: ground and props tile layers, collision, opacity and
+ * pit grids, lighting data and spatial queries.
  */
-import { TILE } from '../config.js';
+import { TILE, DEPTH } from '../config.js';
 
 export default class Floor {
   constructor(scene, level) {
@@ -16,20 +16,26 @@ export default class Floor {
     // First GID of 1 matches Tiled's tile numbering.
     this.map = scene.make.tilemap({ tileWidth: TILE, tileHeight: TILE, width: level.width, height: level.height });
     const tileset = this.map.addTilesetImage('mall', 'tiles', TILE, TILE, 0, 0, 1);
-    this.layer = this.map.createBlankLayer('world', tileset);
-
     this.opacity = new Uint8Array(level.width * level.height);
     this.pits = new Uint8Array(level.width * level.height);
-    for (let y = 0; y < level.height; y++) {
-      for (let x = 0; x < level.width; x++) {
-        const index = level.tiles[y][x];
-        if (index <= 0) continue;
-        this.layer.putTileAt(index, x, y, false);
-        if (level.opaque.has(index)) this.opacity[y * level.width + x] = 1;
-        if (level.pit.has(index)) this.pits[y * level.width + x] = 1;
-      }
-    }
-    this.layer.setCollision([...level.solid]);
+
+    const grids = [['ground', level.tiles, DEPTH.floor], ['props', level.props, DEPTH.props]];
+    this.layers = grids
+      .filter(([, data]) => data)
+      .map(([name, data, depth]) => {
+        const layer = this.map.createBlankLayer(name, tileset).setDepth(depth);
+        for (let y = 0; y < level.height; y++) {
+          for (let x = 0; x < level.width; x++) {
+            const index = data[y][x];
+            if (index <= 0) continue;
+            layer.putTileAt(index, x, y, false);
+            if (level.opaque.has(index)) this.opacity[y * level.width + x] = 1;
+            if (level.pit.has(index)) this.pits[y * level.width + x] = 1;
+          }
+        }
+        layer.setCollision([...level.solid]);
+        return layer;
+      });
 
     this.playerSpawn = level.playerSpawn;
     this.enemySpawns = level.enemySpawns;

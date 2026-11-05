@@ -2,7 +2,7 @@
  * Plays one level. On player death the tape rewinds to the level start.
  */
 import Phaser from 'phaser';
-import { FX, CAMERA, DEPTH, VIEW_W, VIEW_H, ZOMBIE, STEALTH, FLASHLIGHT, LEVELS } from '../config.js';
+import { FX, CAMERA, VIEW_W, VIEW_H, ZOMBIE, STEALTH, FLASHLIGHT, LEVELS } from '../config.js';
 import { readLevel } from '../world/Level.js';
 import Floor from '../world/Floor.js';
 import Player from '../entities/Player.js';
@@ -32,7 +32,6 @@ export default class GameScene extends Phaser.Scene {
 
     // Level
     this.floor = new Floor(this, readLevel(this, `level:${this.levelName}`));
-    this.floor.layer.setDepth(DEPTH.floor);
 
     this.physics.world.resume(); // previous run may have ended paused
     this.physics.world.setBounds(0, 0, this.floor.widthPx, this.floor.heightPx);
@@ -53,8 +52,8 @@ export default class GameScene extends Phaser.Scene {
     this.device = this.floor.device ? new Device(this, this.floor.device.x, this.floor.device.y) : null;
 
     // Collisions
-    this.physics.add.collider(this.player, this.floor.layer);
-    this.physics.add.collider(this.enemies, this.floor.layer);
+    this.physics.add.collider(this.player, this.floor.layers);
+    this.physics.add.collider(this.enemies, this.floor.layers);
     this.physics.add.collider(this.enemies, this.enemies);
     this.physics.add.collider(this.player, this.enemies);
 

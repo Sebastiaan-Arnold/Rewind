@@ -67,9 +67,10 @@ export default class Lighting {
     return { def, key, x: ox, y: oy, size, glow, level: 1, nextChange: 0, offUntil: 0 };
   }
 
-  /** Flicker patterns: none, subtle (hum), broken (stutters and drops out). */
+  /** Flicker patterns: none, subtle (hum), broken (stutters and drops out), fire. */
   flicker(light, time) {
     const mode = light.def.flicker;
+    if (mode === 'fire') return 0.72 + Math.sin(time * 0.017 + light.x) * 0.1 + Math.random() * 0.18;
     if (mode === 'subtle') return 0.9 + Math.sin(time * 0.013 + light.x) * 0.04 + Math.random() * 0.06;
     if (mode === 'broken') {
       if (time < light.offUntil) return Math.random() < 0.12 ? 0.6 : 0.05;
