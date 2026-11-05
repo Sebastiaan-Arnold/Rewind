@@ -38,7 +38,7 @@ npm run dev
 | Left mouse        | Use item in hand                |
 | 1 2 3 / Wheel     | Select inventory slot           |
 
-Only the item in hand is active. The flashlight lights the way and its burst blinds enemies; switching to the crowbar means going dark.
+Only the item in hand is active. Clicking with the flashlight switches it on or off. A lit beam reveals the way but draws zombies from a distance; in darkness the player is harder to detect. Switching to the crowbar means going dark.
 
 ## Project structure
 

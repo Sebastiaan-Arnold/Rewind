@@ -68,13 +68,14 @@ export default class HudScene extends Phaser.Scene {
 
     if (this.debug) {
       const room = game.floor.roomAt(player.x, player.y);
-      this.debug.setText(`seed ${game.seed}  hits ${player.hits}  ${room ? room.template.label : 'corridor'}`);
+      const light = (game.playerLight ?? 0).toFixed(2);
+      this.debug.setText(`seed ${game.seed}  hits ${player.hits}  light ${light}  ${room ? room.template.label : 'corridor'}`);
     }
   }
 
   drawInventory(player) {
     const inv = player.inventory;
-    const key = `${inv.selected}:${inv.slots.map((s) => s?.id ?? '-').join(',')}:${player.dead}`;
+    const key = `${inv.selected}:${inv.slots.map((s) => s?.id ?? '-').join(',')}:${player.dead}:${player.beamEnabled}`;
     if (key === this.inventoryKey) return;
     this.inventoryKey = key;
 
@@ -91,6 +92,8 @@ export default class HudScene extends Phaser.Scene {
       icon.setVisible(visible && Boolean(item));
       if (item) icon.setTexture(item.icon).setAlpha(selected ? 1 : 0.45);
     });
-    this.itemName.setText(visible && inv.active ? inv.active.name : '');
+    const active = inv.active;
+    const state = active?.emitsLight ? (player.beamEnabled ? ' ON' : ' OFF') : '';
+    this.itemName.setText(visible && active ? active.name + state : '');
   }
 }

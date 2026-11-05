@@ -30,8 +30,8 @@ export const ITEMS = {
     grip: [5, 0],
     pose: 'light',
     emitsLight: true,
-    cooldownMs: FLASHLIGHT.burstCooldownMs,
-    use: flashBurst,
+    cooldownMs: FLASHLIGHT.toggleCooldownMs,
+    use: toggleBeam,
   },
 };
 
@@ -67,20 +67,7 @@ function swingCrowbar(scene, player, time) {
   }
 }
 
-function flashBurst(scene, player, time) {
-  player.burstUntil = time + FLASHLIGHT.burstMs;
-  const half = Phaser.Math.DegToRad(FLASHLIGHT.burstHalfAngleDeg);
-  const origin = player.beamOrigin();
-  scene.effects.flash(origin.x, origin.y, player.aimAngle);
-  scene.vhs.kick(0.25);
-
-  for (const enemy of scene.enemies.getChildren()) {
-    if (enemy.dead) continue;
-    const dist = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
-    if (dist > FLASHLIGHT.burstRange) continue;
-    const angleTo = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
-    if (Math.abs(Phaser.Math.Angle.Wrap(angleTo - player.aimAngle)) > half) continue;
-    if (!scene.floor.hasLineOfSight(player.x, player.y, enemy.x, enemy.y)) continue;
-    enemy.blind(time + FLASHLIGHT.blindMs);
-  }
+/** Switches the beam on or off. A lit beam attracts zombies. */
+function toggleBeam(scene, player) {
+  player.beamEnabled = !player.beamEnabled;
 }

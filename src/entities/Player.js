@@ -29,7 +29,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.knockbackUntil = 0;
     this.readyAt = {}; // per-item cooldowns
     this.equipReadyAt = 0;
-    this.burstUntil = 0;
+    this.beamEnabled = true;
     this.swingStart = -Infinity;
     this.swingHalf = 0;
     this.walked = 0;
@@ -57,9 +57,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (item) this.held.setTexture(item.held).setOrigin(...item.heldOrigin);
   }
 
-  /** True while the flashlight is in hand and ready. */
+  /** True while the flashlight is in hand, switched on and ready. */
   isBeamOn() {
-    return !this.dead && this.item?.emitsLight && this.scene.time.now >= this.equipReadyAt;
+    return !this.dead && this.beamEnabled && this.item?.emitsLight && this.scene.time.now >= this.equipReadyAt;
   }
 
   /** World position of the flashlight lens. */

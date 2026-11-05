@@ -142,6 +142,22 @@ export default class Floor {
     return this.castRay(x1, y1, (x2 - x1) / dist, (y2 - y1) / dist, dist) >= dist;
   }
 
+  /**
+   * Approximate light level (0..1) at a world position from ambient areas and
+   * static lights with line of sight. Flicker is ignored.
+   */
+  lightLevelAt(x, y) {
+    const area = this.ambientAreas.find((a) => x >= a.x && x < a.x + a.w && y >= a.y && y < a.y + a.h);
+    let level = area ? luminance(area.color) : 0;
+    for (const light of this.lights) {
+      const d = Math.hypot(light.x - x, light.y - y);
+      if (d >= light.radius || !this.hasLineOfSight(light.x, light.y, x, y)) continue;
+      const f = 1 - d / light.radius;
+      level += light.intensity * f * f * luminance(light.color);
+    }
+    return Math.min(1, level);
+  }
+
   /** Returns the room containing the point, or null for corridors. */
   roomAt(px, py) {
     const x = px / TILE;
@@ -156,8 +172,12 @@ function scaleRect(r) {
   return { x: r.x * TILE, y: r.y * TILE, w: r.w * TILE, h: r.h * TILE };
 }
 
-/** Returns the darkest of the given colours (by luminance). */
+/** Perceived brightness of a colour, 0..1. */
+function luminance(c) {
+  return (((c >> 16) & 255) * 0.3 + ((c >> 8) & 255) * 0.59 + (c & 255) * 0.11) / 255;
+}
+
+/** Returns the darkest of the given colours. */
 function darker(...colors) {
-  const lum = (c) => ((c >> 16) & 255) * 0.3 + ((c >> 8) & 255) * 0.59 + (c & 255) * 0.11;
-  return colors.reduce((a, b) => (lum(b) < lum(a) ? b : a));
+  return colors.reduce((a, b) => (luminance(b) < luminance(a) ? b : a));
 }

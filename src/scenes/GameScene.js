@@ -3,7 +3,7 @@
  * On player death the tape rewinds and the scene restarts with a new seed.
  */
 import Phaser from 'phaser';
-import { FX, CAMERA, DEPTH, VIEW_W, VIEW_H } from '../config.js';
+import { FX, CAMERA, DEPTH, VIEW_W, VIEW_H, ZOMBIE, STEALTH, FLASHLIGHT } from '../config.js';
 import { createRng, randomSeed } from '../utils/rng.js';
 import { readRoomTemplate } from '../world/RoomTemplate.js';
 import { generateFloor } from '../world/FloorGenerator.js';
@@ -84,11 +84,21 @@ export default class GameScene extends Phaser.Scene {
       this.player.update(time, delta);
       this.rewind.record(time, this.player);
     }
-    for (const enemy of this.enemies.getChildren()) enemy.update(time, delta, this.player, this.floor);
+    const sightRange = this.zombieSightRange();
+    for (const enemy of this.enemies.getChildren()) enemy.update(time, delta, this.player, this.floor, sightRange);
 
     this.updateCamera();
     this.lighting.update(time, this.cameras.main, this.player);
     this.vhs.update(time, delta);
+  }
+
+  /** Zombie detection range for the player's current visibility. */
+  zombieSightRange() {
+    const p = this.player;
+    this.playerLight = this.floor.lightLevelAt(p.x, p.y);
+    const factor = Phaser.Math.Clamp(STEALTH.base + this.playerLight * STEALTH.gain, STEALTH.minFactor, 1);
+    const range = ZOMBIE.sightRange * factor;
+    return p.isBeamOn() ? Math.max(range, FLASHLIGHT.attractRange) : range;
   }
 
   /** Leads the camera toward the aim direction. */

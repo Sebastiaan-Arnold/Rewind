@@ -71,15 +71,4 @@ export default class Effects {
     if (this.decals.length > MAX_DECALS) this.decals.shift().destroy();
   }
 
-  /** Flashlight burst: a brief bloom in front of the lens. */
-  flash(x, y, angle) {
-    const glow = this.scene.add
-      .image(x + Math.cos(angle) * 22, y + Math.sin(angle) * 22, 'fx-glow')
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setDepth(DEPTH.emissive)
-      .setRotation(angle)
-      .setScale(1.8, 1.1)
-      .setAlpha(0.75);
-    this.scene.tweens.add({ targets: glow, alpha: 0, scaleX: 2.4, duration: 180, onComplete: () => glow.destroy() });
-  }
 }

@@ -106,26 +106,25 @@ export default class Lighting {
       });
     }
 
-    this.drawPlayerLights(time, player);
+    this.drawPlayerLights(player);
     rt.draw(this.dynamic, -cx, -cy);
     rt.render();
   }
 
-  drawPlayerLights(time, player) {
+  drawPlayerLights(player) {
     const g = this.dynamic;
     g.clear();
     if (player.dead) return;
 
     if (player.isBeamOn()) {
-      const burst = time < player.burstUntil;
-      const half = Phaser.Math.DegToRad(burst ? FLASHLIGHT.burstHalfAngleDeg : FLASHLIGHT.halfAngleDeg);
+      const half = Phaser.Math.DegToRad(FLASHLIGHT.halfAngleDeg);
       const origin = player.beamOrigin();
       drawLightShape(g, this.floor, {
         x: origin.x,
         y: origin.y,
-        radius: FLASHLIGHT.range * (burst ? 1.1 : 1),
-        color: burst ? 0xffffff : FLASHLIGHT.color,
-        intensity: FLASHLIGHT.intensity * (burst ? 1.6 : 1),
+        radius: FLASHLIGHT.range,
+        color: FLASHLIGHT.color,
+        intensity: FLASHLIGHT.intensity,
         falloff: FLASHLIGHT.falloff,
         start: player.aimAngle - half,
         end: player.aimAngle + half,
