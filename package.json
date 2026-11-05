@@ -1,0 +1,19 @@
+{
+  "name": "rewind",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Rewind - a top-down VHS thriller dungeon crawler",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tileset": "node tools/make-placeholder-tileset.mjs"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.6"
+  }
+}
