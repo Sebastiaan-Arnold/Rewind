@@ -1,15 +1,13 @@
 /**
- * A single run: generates the floor, spawns actors and drives gameplay.
- * On player death the tape rewinds and the scene restarts with a new seed.
+ * Plays one level. On player death the tape rewinds to the level start.
  */
 import Phaser from 'phaser';
-import { FX, CAMERA, DEPTH, VIEW_W, VIEW_H, ZOMBIE, STEALTH, FLASHLIGHT } from '../config.js';
-import { createRng, randomSeed } from '../utils/rng.js';
-import { readRoomTemplate } from '../world/RoomTemplate.js';
-import { generateFloor } from '../world/FloorGenerator.js';
+import { FX, CAMERA, DEPTH, VIEW_W, VIEW_H, ZOMBIE, STEALTH, FLASHLIGHT, LEVELS } from '../config.js';
+import { readLevel } from '../world/Level.js';
 import Floor from '../world/Floor.js';
 import Player from '../entities/Player.js';
 import Zombie from '../entities/Zombie.js';
+import Device from '../entities/Device.js';
 import Lighting from '../lighting/Lighting.js';
 import Effects from '../fx/Effects.js';
 import Rewind from '../fx/Rewind.js';
@@ -25,21 +23,16 @@ export default class GameScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.seed = data.seed;
+    this.levelName = data.level ?? LEVELS[0];
     this.restarting = false;
   }
 
   create() {
-    console.log(`Rewind run seed: ${this.seed}   (replay with ?seed=${this.seed})`);
     this.input.mouse?.disableContextMenu();
 
-    // Floor
-    const rng = createRng(this.seed);
-    const templates = this.registry.get('roomKeys').map((key) => readRoomTemplate(this, key));
-    const plan = generateFloor(templates, rng);
-    this.floor = new Floor(this, plan);
+    // Level
+    this.floor = new Floor(this, readLevel(this, `level:${this.levelName}`));
     this.floor.layer.setDepth(DEPTH.floor);
-    console.log('Room order:', plan.rooms.map((r) => r.template.label).join(' -> '));
 
     this.physics.world.resume(); // previous run may have ended paused
     this.physics.world.setBounds(0, 0, this.floor.widthPx, this.floor.heightPx);
@@ -57,6 +50,8 @@ export default class GameScene extends Phaser.Scene {
       if (spawn.kind === 'zombie') this.enemies.add(new Zombie(this, spawn.x, spawn.y));
     }
 
+    this.device = this.floor.device ? new Device(this, this.floor.device.x, this.floor.device.y) : null;
+
     // Collisions
     this.physics.add.collider(this.player, this.floor.layer);
     this.physics.add.collider(this.enemies, this.floor.layer);
@@ -72,12 +67,13 @@ export default class GameScene extends Phaser.Scene {
     this.vhs = new VhsEffect(this);
 
     // HUD overlay (separate scene, unaffected by the VHS filter)
-    this.runStartedAt = this.time.now;
+    this.runStartedAt = null; // set on the first frame (game loop time)
     if (!this.scene.isActive('Hud')) this.scene.launch('Hud');
     else this.scene.get('Hud').resetRun();
   }
 
   update(time, delta) {
+    this.runStartedAt ??= time;
     if (this.rewinding) {
       if (!this.rewind.step(this.player)) this.restartRun();
     } else {
@@ -87,8 +83,13 @@ export default class GameScene extends Phaser.Scene {
     const sightRange = this.zombieSightRange();
     for (const enemy of this.enemies.getChildren()) enemy.update(time, delta, this.player, this.floor, sightRange);
 
+    if (this.device) {
+      this.device.update(time);
+      if (!this.player.dead && !this.player.frozen && this.device.touches(this.player)) this.completeLevel();
+    }
+
     this.updateCamera();
-    this.lighting.update(time, this.cameras.main, this.player);
+    this.lighting.update(time, this.cameras.main, this.player, this.device ? [this.device.light()] : []);
     this.vhs.update(time, delta);
   }
 
@@ -134,26 +135,43 @@ export default class GameScene extends Phaser.Scene {
     this.hitstop(90);
   }
 
-  onPlayerDied() {
+  /** @param {'hit' | 'fall'} cause */
+  onPlayerDied(cause = 'hit') {
     const hud = this.scene.get('Hud');
     this.physics.world.pause();
     this.vhs.setDamage(3);
     this.vhs.hold(1.2);
-    this.cameras.main.shake(400, 0.01);
-    hud.showMessage('TRACKING LOST');
+    this.cameras.main.shake(cause === 'fall' ? 250 : 400, 0.01);
+    hud.showMessage(cause === 'fall' ? 'SIGNAL LOST' : 'TRACKING LOST');
 
     this.time.delayedCall(REWIND_DELAY_MS, () => {
       hud.showMessage('<< REWIND');
       this.vhs.hold(0.7);
+      this.player.resetPose();
       this.rewind.start(REWIND_FRAMES);
       this.rewinding = true;
     });
     this.time.delayedCall(REWIND_DELAY_MS + REWIND_MAX_MS, () => this.restartRun());
   }
 
+  /** The device was reached: end the tape and return to the title screen. */
+  completeLevel() {
+    const hud = this.scene.get('Hud');
+    this.player.frozen = true;
+    this.player.setVelocity(0, 0);
+    this.physics.world.pause();
+    this.vhs.hold(0.9);
+    hud.showMessage('TAPE 01  END');
+    this.time.delayedCall(1600, () => hud.showMessage('EJECT'));
+    this.time.delayedCall(2600, () => {
+      this.scene.stop('Hud');
+      this.scene.start('Title');
+    });
+  }
+
   restartRun() {
     if (this.restarting) return;
     this.restarting = true;
-    this.scene.restart({ seed: randomSeed() });
+    this.scene.restart({ level: this.levelName });
   }
 }

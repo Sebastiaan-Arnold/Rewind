@@ -24,10 +24,10 @@ npm run dev
 
 ### URL parameters
 
-| Parameter  | Effect                                                    |
-| ---------- | --------------------------------------------------------- |
-| `?seed=<n>` | Load a specific floor layout. The active seed is logged to the console. |
-| `?debug`    | Show physics bodies, seed, hit count and current room.   |
+| Parameter | Effect                                                     |
+| --------- | ---------------------------------------------------------- |
+| `?play`   | Skip the title screen and start the first level.           |
+| `?debug`  | Show physics bodies, current area, hit count and light level. |
 
 ## Controls
 
@@ -45,39 +45,38 @@ Only the item in hand is active. Clicking with the flashlight switches it on or 
 ```
 public/
   assets/tiles/     Tilesets
-  rooms/            Tiled room maps and the room manifest (rooms.json)
+  levels/           Tiled level maps
 src/
   config.js         Gameplay tuning values
   art/              Palette, pixel buffer and procedural sprites
-  scenes/           Boot, Game and HUD scenes
-  world/            Room parsing, floor generation and floor construction
+  scenes/           Boot, Title, Game and HUD scenes
+  world/            Level parsing, collision, line of sight and light queries
   lighting/         Lightmap and shadowed light shapes
-  entities/         Player and enemies
+  entities/         Player, enemies and the exit device
   items/            Inventory and item behaviour
   fx/               VHS filter, particles and death rewind
-  utils/            Seeded RNG and URL parameters
+  utils/            URL parameters
 tools/              Asset generation scripts
 ```
 
-## Room authoring
+## Level authoring
 
-Rooms are authored in [Tiled](https://www.mapeditor.org) and saved as JSON in `public/rooms/`.
+Each level is a single map authored in [Tiled](https://www.mapeditor.org) and saved as JSON in `public/levels/`. Levels are listed in play order in `LEVELS` in `src/config.js`.
 
 - **Map:** orthogonal, 16×16 px tiles, fixed size. The tileset must be embedded.
-- **Tile layer `ground`:** floor, walls and props. Rooms are enclosed by walls.
+- **Map properties:** `name` (string), `ambient` (color, light level outside any area).
+- **Tile layer `ground`:** floors, walls and props.
 - **Object layer `objects`:**
 
-| Class    | Shape                              | Properties              |
-| -------- | ---------------------------------- | ----------------------- |
-| `door`   | Rectangle on the outer wall, 2 tiles wide, painted as wall | — |
-| `enemy`  | Point                              | `kind` (string): `zombie` |
-| `player` | Point (used when the room is first) | —                      |
-| `light`  | Point                              | `color` (color), `radius` (int), `intensity` (float), `flicker` (`none` \| `subtle` \| `broken`), `glow` (bool) |
+| Class    | Shape     | Properties |
+| -------- | --------- | ---------- |
+| `player` | Point     | — (level start; the tape rewinds here on death) |
+| `enemy`  | Point     | `kind` (string): `zombie` |
+| `light`  | Point     | `color` (color), `radius` (int), `intensity` (float), `flicker` (`none` \| `subtle` \| `broken`), `glow` (bool) |
+| `area`   | Rectangle | `name` (string), `ambient` (color). Later areas override earlier ones. |
+| `device` | Point     | — (the era's exit; touching it ends the tape) |
 
-- **Map property:** `ambient` (color) sets the room's base light level. Near-black makes a dark room.
-- **Tile properties:** `collides` (solid) and `opaque` (blocks light and line of sight).
-
-Register a new room by adding its file name to `public/rooms/rooms.json`. The generator opens only the doors it connects; all others remain closed.
+- **Tile properties:** `collides` (solid), `opaque` (blocks light and line of sight), `pit` (falling in ends the run).
 
 ## Deployment
 

@@ -1,7 +1,7 @@
 /**
  * Screen-space lightmap.
  *
- * Each frame a view-sized render texture is filled with darkness, room
+ * Each frame a view-sized render texture is filled with darkness, area
  * ambient levels are drawn in, and lights are added on top (additive). The
  * texture is then multiplied over the scene: black hides, white reveals.
  *
@@ -82,7 +82,8 @@ export default class Lighting {
     return 1;
   }
 
-  update(time, camera, player) {
+  /** @param {object[]} extra  additional dynamic lights for this frame */
+  update(time, camera, player, extra = []) {
     const cx = Math.round(camera.scrollX);
     const cy = Math.round(camera.scrollY);
     const rt = this.lightmap;
@@ -106,6 +107,8 @@ export default class Lighting {
       });
     }
 
+    this.dynamic.clear();
+    for (const light of extra) drawLightShape(this.dynamic, this.floor, light);
     this.drawPlayerLights(player);
     rt.draw(this.dynamic, -cx, -cy);
     rt.render();
@@ -113,7 +116,6 @@ export default class Lighting {
 
   drawPlayerLights(player) {
     const g = this.dynamic;
-    g.clear();
     if (player.dead) return;
 
     if (player.isBeamOn()) {

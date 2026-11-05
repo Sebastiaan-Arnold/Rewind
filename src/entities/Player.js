@@ -25,6 +25,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.aimAngle = 0;
     this.hits = 0;
     this.dead = false;
+    this.frozen = false; // control suspended (level end)
     this.invulnerableUntil = 0;
     this.knockbackUntil = 0;
     this.readyAt = {}; // per-item cooldowns
@@ -79,7 +80,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   update(time, delta) {
-    if (this.dead) return;
+    if (this.dead || this.frozen) return;
     const scene = this.scene;
     const pointer = scene.input.activePointer;
     const k = this.keys;
@@ -113,7 +114,28 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       }
     }
 
+    if (scene.floor.isPitAt(this.x, this.y)) {
+      this.fall();
+      return;
+    }
+
     this.animate(time, delta);
+  }
+
+  /** Steps into a pit: drops out of sight and ends the run. */
+  fall() {
+    this.dead = true;
+    this.body.enable = false;
+    this.held.setVisible(false);
+    this.setAlpha(1);
+    this.scene.tweens.add({ targets: this, scale: 0.15, angle: this.angle + 240, alpha: 0, duration: 650, ease: 'Quad.easeIn' });
+    this.scene.onPlayerDied('fall');
+  }
+
+  /** Restores the sprite after a fall, before the rewind plays. */
+  resetPose() {
+    this.scene.tweens.killTweensOf(this);
+    this.setScale(1).setAlpha(1);
   }
 
   animate(time, delta) {

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { VIEW_W, VIEW_H } from './config.js';
 import { params } from './utils/params.js';
 import BootScene from './scenes/BootScene.js';
+import TitleScene from './scenes/TitleScene.js';
 import GameScene from './scenes/GameScene.js';
 import HudScene from './scenes/HudScene.js';
 
@@ -24,7 +25,7 @@ const game = new Phaser.Game({
       debug: params.has('debug'),
     },
   },
-  scene: [BootScene, GameScene, HudScene],
+  scene: [BootScene, TitleScene, GameScene, HudScene],
 });
 
 // Development builds expose the game instance for console inspection.

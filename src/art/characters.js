@@ -5,7 +5,7 @@
  * Player frames:  <pose>-<step>, pose = empty | light | melee, step = 0..3
  * Zombie frames:  walk-<step>, windup
  */
-import { PixelBuffer, mix } from './pixel.js';
+import { PixelBuffer, mix, noise } from './pixel.js';
 import { P } from './palette.js';
 
 const FRAME = 16;
@@ -134,6 +134,69 @@ function drawIcon(kind) {
   return b.outline(P.ink);
 }
 
+// ------------------------------------------------------------------ device
+
+/** CRT television, front view, with a static-filled screen. */
+function drawCrt(frame) {
+  const b = new PixelBuffer(FRAME, FRAME);
+  b.line(5, 0, 7, 3, P.steelDark);
+  b.line(11, 0, 9, 3, P.steelDark);
+  b.rect(1, 3, 14, 11, P.ink);
+  b.rect(2, 4, 12, 9, 0x8f8a7c);
+  b.rect(2, 4, 12, 1, 0xb3ae9e);
+  b.rect(3, 5, 8, 7, P.ink);
+  for (let y = 6; y < 11; y++) {
+    for (let x = 4; x < 10; x++) {
+      const n = noise(x, y, frame * 7 + 3);
+      b.set(x, y, n < 0.35 ? 0xe8f4ff : n < 0.7 ? 0x7f9db0 : 0x26343e);
+    }
+  }
+  b.set(12, 6, P.ink).set(12, 9, P.ink).set(12, 11, P.neonPink);
+  b.rect(3, 14, 2, 1, P.ink).rect(11, 14, 2, 1, P.ink);
+  return b;
+}
+
+// --------------------------------------------------------------- title art
+
+/** VCR front panel. Display and labels are drawn as text on top at runtime. */
+function drawVcr() {
+  const W = 300;
+  const H = 46;
+  const b = new PixelBuffer(W, H);
+  b.rect(0, 0, W, H, P.ink);
+  b.rect(1, 1, W - 2, H - 2, 0x2b2c31);
+  b.rect(1, 1, W - 2, 1, 0x4a4c53);
+  b.rect(1, H - 3, W - 2, 2, 0x1b1c20);
+  // Tape slot with flap
+  b.rect(20, 12, 120, 14, P.ink);
+  b.rect(21, 13, 118, 12, 0x17181b);
+  b.rect(21, 13, 118, 1, 0x3a3c42);
+  // Display window
+  b.rect(176, 10, 70, 18, P.ink);
+  b.rect(177, 11, 68, 16, 0x061416);
+  // Transport buttons
+  for (let i = 0; i < 5; i++) {
+    const x = 160 + i * 26;
+    b.rect(x, 33, 22, 7, P.ink);
+    b.rect(x + 1, 34, 20, 5, 0x44464d);
+    b.rect(x + 1, 34, 20, 1, 0x5e6068);
+  }
+  // Power button and LED
+  b.rect(258, 12, 30, 12, P.ink);
+  b.rect(259, 13, 28, 10, 0x44464d);
+  b.rect(272, 30, 3, 2, 0xff3040);
+  return b;
+}
+
+function drawCassette() {
+  const b = new PixelBuffer(110, 10);
+  b.rect(0, 0, 110, 10, 0x141418);
+  b.rect(1, 1, 108, 8, 0x26262c);
+  b.rect(20, 2, 70, 6, P.paper);
+  b.rect(20, 4, 70, 1, P.neonPink);
+  return b;
+}
+
 // ------------------------------------------------------------------ effects
 
 function drawSoftGlow(size) {
@@ -168,6 +231,13 @@ export function makeCharacterTextures(scene) {
   for (let i = 0; i < 4; i++) zombieFrames[`walk-${i}`] = drawZombie('walk', i);
   zombieFrames.windup = drawZombie('windup');
   addSheet(scene, 'zombie', zombieFrames);
+
+  const crtFrames = {};
+  for (let i = 0; i < 4; i++) crtFrames[`static-${i}`] = drawCrt(i);
+  addSheet(scene, 'device-crt', crtFrames);
+
+  addImage(scene, 'vcr', drawVcr());
+  addImage(scene, 'cassette', drawCassette());
 
   addImage(scene, 'held-crowbar', drawCrowbar());
   addImage(scene, 'held-flashlight', drawFlashlight());
