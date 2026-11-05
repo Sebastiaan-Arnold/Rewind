@@ -3,8 +3,9 @@
  *
  * Map requirements (see README, "Room authoring"):
  *   - Tile layer `ground`.
- *   - Object layer `objects` with objects of class `door`, `enemy` or `player`.
+ *   - Object layer `objects` with objects of class `door`, `enemy`, `player` or `light`.
  *   - Tileset tile properties `collides` and `opaque` (booleans).
+ *   - Optional map property `ambient` (colour): base light level of the room.
  */
 export function readRoomTemplate(scene, key) {
   const map = scene.make.tilemap({ key });
@@ -19,6 +20,7 @@ export function readRoomTemplate(scene, key) {
   const objects = map.getObjectLayer('objects')?.objects ?? [];
   const doors = [];
   const enemySpawns = [];
+  const lights = [];
   let playerSpawn = null;
 
   for (const obj of objects) {
@@ -30,6 +32,16 @@ export function readRoomTemplate(scene, key) {
       enemySpawns.push({ x: obj.x, y: obj.y, kind: getProp(obj, 'kind') ?? 'zombie' });
     } else if (obj.type === 'player') {
       playerSpawn = { x: obj.x, y: obj.y };
+    } else if (obj.type === 'light') {
+      lights.push({
+        x: obj.x,
+        y: obj.y,
+        color: parseColor(getProp(obj, 'color'), 0xffffff),
+        radius: getProp(obj, 'radius') ?? 96,
+        intensity: getProp(obj, 'intensity') ?? 0.8,
+        flicker: getProp(obj, 'flicker') ?? 'none',
+        glow: getProp(obj, 'glow') ?? false,
+      });
     }
   }
 
@@ -44,9 +56,10 @@ export function readRoomTemplate(scene, key) {
   }
 
   const label = getProp(map, 'label') ?? key.replace('room:', '');
+  const ambient = parseColor(getProp(map, 'ambient'), 0x30364a);
   map.destroy();
 
-  return { key, label, w, h, tiles, doors, enemySpawns, playerSpawn, solid, opaque };
+  return { key, label, w, h, tiles, doors, enemySpawns, playerSpawn, lights, ambient, solid, opaque };
 }
 
 /** Resolves a door object to its wall side and tile-space rectangle. */
@@ -70,6 +83,13 @@ function toDoor(obj, T, w, h) {
     th: horizontal ? 1 : th,
     length: horizontal ? tw : th,
   };
+}
+
+/** Parses Tiled colour strings (#RRGGBB or #AARRGGBB) to 0xRRGGBB. */
+function parseColor(value, fallback) {
+  if (typeof value !== 'string') return fallback;
+  const hex = value.replace('#', '');
+  return parseInt(hex.length === 8 ? hex.slice(2) : hex, 16);
 }
 
 /** Reads a Tiled custom property (stored as an array of { name, value }). */
