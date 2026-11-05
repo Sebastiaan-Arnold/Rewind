@@ -1,6 +1,7 @@
-// Weapon actions. Each weapon is a function the player can call.
-// Later the flashlight and pistol go here too, and the inventory decides
-// which one a click uses.
+/**
+ * Weapon actions. Each weapon is a function invoked by the player.
+ * Flashlight and pistol will be added here alongside the inventory system.
+ */
 import Phaser from 'phaser';
 import { CROWBAR } from '../config.js';
 
@@ -8,14 +9,14 @@ export function swingCrowbar(scene, player) {
   const half = Phaser.Math.DegToRad(CROWBAR.arcDegrees / 2);
   const aim = player.aimAngle;
 
-  // The swoosh: a pale slice of a circle that fades out quickly.
+  // Swing arc visual.
   const g = scene.add.graphics().setDepth(11);
   g.fillStyle(0xe8e0c8, 0.5);
   g.slice(player.x, player.y, CROWBAR.range, aim - half, aim + half, false);
   g.fillPath();
   scene.tweens.add({ targets: g, alpha: 0, duration: 110, onComplete: () => g.destroy() });
 
-  // Who got hit? Anyone close enough, inside the arc, and not behind a wall.
+  // Hit test: within range, inside the arc, and with line of sight.
   let landed = false;
   for (const enemy of scene.enemies.getChildren()) {
     if (enemy.dead) continue;

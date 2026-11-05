@@ -1,4 +1,3 @@
 {
-  "comment": "Every room the floor generator may use. To add a room: save it from Tiled into this folder, then add its file name (without .json) below.",
   "rooms": ["atrium", "storefront", "service-corridor"]
 }

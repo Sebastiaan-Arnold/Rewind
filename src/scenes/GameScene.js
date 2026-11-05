@@ -1,6 +1,7 @@
-// One run of the game: builds a fresh floor, spawns everyone, and runs
-// the action. When the player dies, this scene restarts with a new seed,
-// which means a new random layout.
+/**
+ * A single run: generates the floor, spawns actors and drives gameplay.
+ * On player death the scene restarts with a new seed (new layout).
+ */
 import Phaser from 'phaser';
 import { FX } from '../config.js';
 import { createRng, randomSeed } from '../utils/rng.js';
@@ -16,7 +17,6 @@ export default class GameScene extends Phaser.Scene {
     super('Game');
   }
 
-  // init() receives data passed in when the scene starts (here: the seed).
   init(data) {
     this.seed = data.seed;
   }
@@ -25,51 +25,49 @@ export default class GameScene extends Phaser.Scene {
     console.log(`Rewind run seed: ${this.seed}   (replay with ?seed=${this.seed})`);
     this.input.mouse?.disableContextMenu();
 
-    // --- Build the floor ---
+    // Floor
     const rng = createRng(this.seed);
     const templates = this.registry.get('roomKeys').map((key) => readRoomTemplate(this, key));
     const plan = generateFloor(templates, rng);
     this.floor = new Floor(this, plan);
     console.log('Room order:', plan.rooms.map((r) => r.template.label).join(' -> '));
 
-    this.physics.world.resume(); // in case the last run ended paused
+    this.physics.world.resume(); // previous run may have ended paused
     this.physics.world.setBounds(0, 0, this.floor.widthPx, this.floor.heightPx);
     this.cameras.main.setBounds(0, 0, this.floor.widthPx, this.floor.heightPx);
 
-    // --- Spawn the player and enemies ---
+    // Actors
     this.player = new Player(this, this.floor.playerSpawn.x, this.floor.playerSpawn.y);
     this.enemies = this.add.group();
     for (const spawn of this.floor.enemySpawns) {
       if (spawn.kind === 'zombie') this.enemies.add(new Zombie(this, spawn.x, spawn.y));
     }
 
-    // --- Who bumps into what ---
+    // Collisions
     this.physics.add.collider(this.player, this.floor.layer);
     this.physics.add.collider(this.enemies, this.floor.layer);
     this.physics.add.collider(this.enemies, this.enemies);
     this.physics.add.collider(this.player, this.enemies);
 
-    // --- Camera: smoothly follow the player ---
+    // Camera
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
-    // --- VHS screen effect ---
+    // Post-processing
     this.vhs = new VhsEffect(this);
 
-    // --- The VCR overlay (runs as a separate scene drawn on top) ---
+    // HUD overlay (separate scene, unaffected by the VHS filter)
     this.runStartedAt = this.time.now;
     if (!this.scene.isActive('Hud')) this.scene.launch('Hud');
     else this.scene.get('Hud').resetRun();
   }
 
-  // update() runs every frame (about 60 times a second).
   update(time, delta) {
     this.player.update(time);
     for (const enemy of this.enemies.getChildren()) enemy.update(time, this.player, this.floor);
     this.vhs.update(time, delta);
   }
 
-  // A very short freeze when something gets hit. Tiny, but it makes
-  // impacts feel weighty: a classic action-game trick called "hitstop".
+  /** Briefly pauses physics on impact to add weight to hits. */
   hitstop(ms = FX.hitstopMs) {
     const world = this.physics.world;
     if (world.isPaused) return;
@@ -92,7 +90,7 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.shake(400, 0.01);
     this.scene.get('Hud').showMessage('TRACKING LOST');
     this.time.delayedCall(900, () => this.scene.get('Hud').showMessage('<< REWIND'));
-    // Restart this era with a brand new layout.
+    // Restart the era with a new layout.
     this.time.delayedCall(1800, () => this.scene.restart({ seed: randomSeed() }));
   }
 }

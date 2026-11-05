@@ -1,11 +1,14 @@
-// Draws the placeholder tileset as a PNG, pixel by pixel.
-// Run with:  npm run tileset
-// Output:    public/assets/tiles/mall-placeholder.png  (8 tiles, 16x16 each)
-//
-// Tile order (Tiled numbers them from 0; in the map data they are +1):
-//   0 floor      1 wall*       2 floor-checker  3 planter*
-//   4 carpet     5 counter*    6 glass*         7 dark floor
-//   (* = solid: marked "collides" in the Tiled tileset)
+/**
+ * Generates the placeholder mall tileset.
+ *
+ * Usage:   npm run tileset
+ * Output:  public/assets/tiles/mall-placeholder.png (4x2 tiles, 16x16 px)
+ *
+ * Tile IDs (GID = ID + 1):
+ *   0 floor     1 wall*     2 checker floor  3 planter*
+ *   4 carpet    5 counter*  6 glass*         7 dark floor
+ *   * collides
+ */
 
 import { deflateSync } from 'node:zlib';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -31,36 +34,36 @@ function tile(index, painter) {
   }
 }
 
-// Small deterministic "random" so the speckles look the same every time.
+// Deterministic speckle pattern.
 const speck = (x, y, n) => ((x * 73 + y * 151 + n * 17) % 23) === 0;
 
-// 0 floor: dull teal mall tiles with grout lines
+// 0 floor
 tile(0, (x, y) => (x === 15 || y === 15) ? '#1f2a31' : speck(x, y, 1) ? '#34454e' : '#2b3a42');
-// 1 wall: mauve with a lighter top edge and dark base
+// 1 wall
 tile(1, (x, y) => y < 2 ? '#7a6880' : y > 13 ? '#3a2f3d' : (y % 5 === 0) ? '#4d3f51' : '#5a4a5e');
 // 2 checker floor
 tile(2, (x, y) => ((x < 8) !== (y < 8)) ? '#35464f' : '#26333a');
-// 3 planter: pot with a dead plant, on floor
+// 3 planter
 tile(3, (x, y) => {
   const dx = x - 7.5, dy = y - 7.5, d = Math.sqrt(dx * dx + dy * dy);
   if (d < 4) return speck(x, y, 3) ? '#3f5a34' : '#2f4a2a';
   if (x >= 2 && x <= 13 && y >= 2 && y <= 13) return (x === 2 || y === 2) ? '#8a6a4c' : '#6b4f3a';
   return '#2b3a42';
 });
-// 4 carpet: dark burgundy with a dither
+// 4 carpet
 tile(4, (x, y) => ((x + y) % 4 === 0) ? '#553648' : '#462b3a');
-// 5 counter: wooden top, darker front
+// 5 counter
 tile(5, (x, y) => y < 9 ? (y === 0 ? '#a8977c' : '#8a7a62') : (y === 9 ? '#3d352c' : '#5e5244'));
-// 6 glass shopfront: frame + diagonal reflection
+// 6 glass shopfront
 tile(6, (x, y) => {
   if (x === 0 || x === 15 || y === 0 || y === 15) return '#262626';
   if (Math.abs(x - y) < 2 || Math.abs(x - y + 6) < 1) return '#7fb2bb';
   return '#3d6670';
 });
-// 7 dark floor (for unlit areas later)
+// 7 dark floor
 tile(7, (x, y) => (x === 15 || y === 15) ? '#101418' : '#171d22');
 
-// ---- minimal PNG encoder (signature + IHDR + IDAT + IEND chunks) ----
+// PNG encoding (IHDR, IDAT, IEND).
 const crcTable = Array.from({ length: 256 }, (_, n) => {
   let c = n;
   for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
@@ -79,10 +82,10 @@ const chunk = (type, data) => {
 };
 const ihdr = Buffer.alloc(13);
 ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4);
-ihdr[8] = 8; ihdr[9] = 6; // 8 bits per channel, RGBA
+ihdr[8] = 8; ihdr[9] = 6; // 8-bit RGBA
 const raw = Buffer.alloc((W * 4 + 1) * H);
 for (let y = 0; y < H; y++) {
-  raw[y * (W * 4 + 1)] = 0; // filter type "none" for each row
+  raw[y * (W * 4 + 1)] = 0; // filter: none
   Buffer.from(px.buffer, y * W * 4, W * 4).copy(raw, y * (W * 4 + 1) + 1);
 }
 const png = Buffer.concat([

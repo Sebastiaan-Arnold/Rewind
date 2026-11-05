@@ -1,15 +1,15 @@
-// Decides WHERE each room goes. Pure logic: no drawing, no Phaser.
-//
-// How it works (like laying puzzle pieces):
-//   1. Shuffle the rooms. The first one is placed and becomes the start room.
-//   2. For each next room, look for a free door on any room already placed,
-//      and a door on the new room facing the opposite way (east <-> west,
-//      north <-> south) with the same width.
-//   3. Put the new room so the two doors line up, with a short corridor
-//      between them. If it would overlap anything, try another door pair.
-//   4. Repeat until every room is placed. Unused doors stay as walls.
-// Because step 2 picks from ANY placed room, the floor branches randomly
-// instead of always being a straight line.
+/**
+ * Floor layout generation. Engine-independent; operates in tile units.
+ *
+ * 1. Shuffle the room templates; the first becomes the start room.
+ * 2. For each remaining room, pair an open door on any placed room with an
+ *    opposite-facing door of equal width on the new room.
+ * 3. Place the new room so both doors align across a corridor of random
+ *    length. Reject placements that overlap existing rooms or corridors.
+ * 4. Unused doors remain closed.
+ *
+ * Attaching to any placed room (not only the last) yields branching layouts.
+ */
 
 import { FLOOR_GEN } from '../config.js';
 
@@ -25,7 +25,7 @@ export function generateFloor(templates, rng) {
     if (!placed) console.warn(`Floor generator: no room for "${template.label}" this run`);
   }
 
-  // Shift everything so the top-left of the floor sits at (padding, padding).
+  // Normalise coordinates so the floor starts at (padding, padding).
   const pad = FLOOR_GEN.padding;
   const all = [...rooms.map(roomRect), ...corridors.map((c) => c.bounds)];
   const minX = Math.min(...all.map((r) => r.x));
@@ -43,7 +43,6 @@ export function generateFloor(templates, rng) {
 }
 
 function attach(template, rooms, corridors, rng) {
-  // Every unused door on every placed room, in random order.
   const openDoors = rng.shuffle(
     rooms.flatMap((room) =>
       room.template.doors
@@ -63,7 +62,7 @@ function attach(template, rooms, corridors, rng) {
       const spot = placeAgainst(from.room, from.door, template, to.door, length);
       const newRect = { x: spot.x, y: spot.y, w: template.w, h: template.h };
 
-      // Keep at least 1 empty tile between rooms, and keep corridors clear.
+      // Require a one-tile gap between rooms and an unobstructed corridor.
       const hitsRoom = rooms.some((r) => overlaps(newRect, roomRect(r), 1));
       const hitsCorridor = corridors.some((c) => overlaps(newRect, c.bounds, 1));
       const corridorBlocked =
@@ -85,9 +84,11 @@ function attach(template, rooms, corridors, rng) {
   return null;
 }
 
-// Positions room B so door `db` faces door `da` of room A, `len` tiles apart.
-// Returns B's position and the corridor's floor area and outer bounds
-// (bounds = floor plus a wall on each side).
+/**
+ * Positions room B so its door `db` faces door `da` of room A, `len` tiles apart.
+ * Returns B's position plus the corridor's floor rectangle and its bounds
+ * (floor plus one wall tile on each side).
+ */
 function placeAgainst(A, da, B, db, len) {
   const ax = A.x + da.tx;
   const ay = A.y + da.ty;

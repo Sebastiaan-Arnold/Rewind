@@ -1,13 +1,13 @@
-// A slow zombie. Its brain is a small "state machine": it is always in
-// exactly one state, and each state has simple rules for what to do and
-// when to switch to another state.
-//
-//   idle    - shuffles around aimlessly until it sees the player
-//   chase   - walks straight at the player while it can see them
-//   search  - lost sight: walks to where it last saw the player
-//   windup  - close enough: stops and flashes red (the warning!)
-//   recover - just attacked, catching its breath
-//   stunned - just got hit by the crowbar, knocked back
+/**
+ * Zombie: slow melee enemy driven by a finite state machine.
+ *
+ *   idle    - wanders until the player is in sight
+ *   chase   - moves directly toward the visible player
+ *   search  - moves to the player's last known position, with a timeout
+ *   windup  - telegraphed attack (red flash); connects if the player stays in reach
+ *   recover - post-attack cooldown
+ *   stunned - knocked back after taking damage
+ */
 import Phaser from 'phaser';
 import { ZOMBIE } from '../config.js';
 
@@ -20,7 +20,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     const r = ZOMBIE.radius;
     this.body.setCircle(r, this.width / 2 - r, this.height / 2 - r);
-    this.body.pushable = false; // the player can't shove zombies around
+    this.body.pushable = false;
     this.hitRadius = r;
 
     this.hp = ZOMBIE.hp;
@@ -29,7 +29,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.aiUntil = 0;
     this.flashUntil = 0;
     this.lastSeen = null;
-    this.speed = ZOMBIE.speed * Phaser.Math.FloatBetween(0.85, 1.15); // not all identical
+    this.speed = ZOMBIE.speed * Phaser.Math.FloatBetween(0.85, 1.15); // per-instance variance
     this.setRotation(Phaser.Math.FloatBetween(-Math.PI, Math.PI));
   }
 
@@ -42,7 +42,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     switch (this.ai) {
       case 'stunned':
-        this.body.velocity.scale(0.85); // knockback slows down
+        this.body.velocity.scale(0.85); // knockback decay
         if (time >= this.aiUntil) this.afterAction(sees, time);
         break;
 
@@ -73,7 +73,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
 
       case 'search':
         if (sees) { this.ai = 'chase'; break; }
-        // Reached the spot, or searched too long (maybe stuck on a wall)? Give up.
+        // End search on arrival or timeout.
         if (!this.lastSeen || time >= this.aiUntil ||
             Phaser.Math.Distance.Between(this.x, this.y, this.lastSeen.x, this.lastSeen.y) < 6) {
           this.ai = 'idle';
@@ -86,7 +86,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
       default: // idle
         if (sees) { this.ai = 'chase'; break; }
         if (time >= this.aiUntil) {
-          // Every so often: either stand still or shuffle a few steps.
+          // Alternate between pausing and short random walks.
           if (Math.random() < 0.5) {
             this.setVelocity(0, 0);
           } else {
@@ -121,7 +121,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, x, y));
   }
 
-  // White flash when hit, blinking red during the attack wind-up.
+  /** Hit flash (white) takes priority over the wind-up telegraph (red). */
   updateTint(time) {
     if (time < this.flashUntil) {
       this.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
@@ -148,7 +148,7 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.dead = true;
     this.body.enable = false;
     this.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
-    // Topple over and fade, then remove.
+    // Death animation, then removal.
     this.scene.tweens.add({
       targets: this,
       x: this.x + Math.cos(fromAngle) * 10,

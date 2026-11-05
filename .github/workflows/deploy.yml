@@ -1,11 +1,10 @@
-# Builds the game and publishes it to GitHub Pages every time you push to main.
-# One-time setup on GitHub: Settings -> Pages -> Source: "GitHub Actions".
+# Builds the project and deploys it to GitHub Pages on every push to main.
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
-  workflow_dispatch: # lets you also run it by hand from the Actions tab
+  workflow_dispatch:
 
 permissions:
   contents: read

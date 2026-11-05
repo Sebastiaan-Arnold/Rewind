@@ -1,5 +1,7 @@
-// Builds the actual playable floor from the generator's plan:
-// one big tilemap with every room copied in, doors opened, corridors dug.
+/**
+ * Builds the playable floor from a generated plan: a single tilemap with all
+ * rooms stamped in, connecting doors opened and corridors carved.
+ */
 
 import { TILE, TILES, FLOOR_GEN } from '../config.js';
 
@@ -10,9 +12,7 @@ export default class Floor {
     this.widthPx = plan.width * TILE;
     this.heightPx = plan.height * TILE;
 
-    // An empty map the size of the whole floor, using our tileset.
-    // The last argument (1) means "tile number 1 is the first tile in the
-    // image", matching how Tiled numbers them.
+    // First GID of 1 matches Tiled's tile numbering.
     this.map = scene.make.tilemap({ tileWidth: TILE, tileHeight: TILE, width: plan.width, height: plan.height });
     const tileset = this.map.addTilesetImage('mall', 'tiles', TILE, TILE, 0, 0, 1);
     this.layer = this.map.createBlankLayer('world', tileset);
@@ -20,7 +20,7 @@ export default class Floor {
     this.solid = new Set();
     this.opaque = new Set();
 
-    // 1. Copy each room's tiles in at its position.
+    // Stamp room tiles.
     for (const room of plan.rooms) {
       const t = room.template;
       t.solid.forEach((g) => this.solid.add(g));
@@ -33,7 +33,7 @@ export default class Floor {
       }
     }
 
-    // 2. Dig each corridor and open the two doors at its ends.
+    // Carve corridors and open the doors they connect.
     for (const c of plan.corridors) {
       this.fill(c.floor, TILES.FLOOR);
       if (c.horizontal) {
@@ -49,10 +49,9 @@ export default class Floor {
       }
     }
 
-    // 3. Tell physics which tiles are solid.
     this.layer.setCollision([...this.solid]);
 
-    // 4. Work out where things spawn, in world pixels.
+    // Spawn points in world space.
     const start = plan.rooms[0];
     const ps = start.template.playerSpawn ?? { x: (start.template.w * TILE) / 2, y: (start.template.h * TILE) / 2 };
     this.playerSpawn = { x: start.x * TILE + ps.x, y: start.y * TILE + ps.y };
@@ -74,8 +73,7 @@ export default class Floor {
     }
   }
 
-  // Can a straight line go from (x1,y1) to (x2,y2) without hitting an opaque tile?
-  // We walk along the line in small steps and check the tile at each step.
+  /** True if no opaque tile lies on the segment between the two points. */
   hasLineOfSight(x1, y1, x2, y2) {
     const dist = Math.hypot(x2 - x1, y2 - y1);
     const steps = Math.ceil(dist / 4);
@@ -87,7 +85,7 @@ export default class Floor {
     return true;
   }
 
-  // Which room is this point in? (null = corridor)
+  /** Returns the room containing the point, or null for corridors. */
   roomAt(px, py) {
     const x = px / TILE;
     const y = py / TILE;

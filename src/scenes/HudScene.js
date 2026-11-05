@@ -1,9 +1,8 @@
-// The VCR on-screen display, drawn on top of the game.
-// It's a separate scene so it stays crisp: the VHS filter only applies to
-// the game scene's camera, just like a real VCR's overlay sits on top of a
-// worn tape. It also draws the mouse crosshair.
-//
-// Note: no health bar on purpose. Damage shows up as tape glitches.
+/**
+ * VCR-style on-screen display and crosshair, rendered above the game scene
+ * and outside the VHS filter. Health is intentionally not displayed; damage
+ * is communicated through the VHS effect only.
+ */
 import Phaser from 'phaser';
 import { VIEW_W, VIEW_H } from '../config.js';
 import { params } from '../utils/params.js';
@@ -39,7 +38,7 @@ export default class HudScene extends Phaser.Scene {
     this.crosshair.setPosition(Math.round(pointer.x), Math.round(pointer.y));
 
     if (!game || !game.player) return;
-    // Tape counter, like a VCR: hours:minutes:seconds since the run started.
+    // Tape counter (H:MM:SS since run start).
     const s = Math.max(0, Math.floor((time - game.runStartedAt) / 1000));
     const pad = (n) => String(n).padStart(2, '0');
     this.counter.setText(`${Math.floor(s / 3600)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`);
