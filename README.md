@@ -65,14 +65,15 @@ Each level is a single map authored in [Tiled](https://www.mapeditor.org) and sa
 
 - **Map:** orthogonal, 16×16 px tiles, fixed size. The tileset must be embedded.
 - **Map properties:** `name` (string), `ambient` (color, light level outside any area).
-- **Tile layer `ground`:** floors, walls and props.
+- **Tile layer `ground`:** floors, walls and fixed store fixtures.
+- **Tile layer `props`:** furniture, debris and other overlays drawn on transparent tiles (tileset rows 5–9), placed over any floor.
 - **Object layer `objects`:**
 
 | Class    | Shape     | Properties |
 | -------- | --------- | ---------- |
 | `player` | Point     | — (level start; the tape rewinds here on death) |
 | `enemy`  | Point     | `kind` (string): `zombie` |
-| `light`  | Point     | `color` (color), `radius` (int), `intensity` (float), `flicker` (`none` \| `subtle` \| `broken`), `glow` (bool) |
+| `light`  | Point     | `color` (color), `radius` (int), `intensity` (float), `flicker` (`none` \| `subtle` \| `broken` \| `fire`), `glow` (bool) |
 | `area`   | Rectangle | `name` (string), `ambient` (color). Later areas override earlier ones. |
 | `device` | Point     | — (the era's exit; touching it ends the tape) |
 

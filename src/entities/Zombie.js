@@ -18,7 +18,7 @@ const STEP_LENGTH = 5;
 
 export default class Zombie extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
-    super(scene, x, y, 'zombie', 'walk-0');
+    super(scene, x, y, `zombie-${Phaser.Math.Between(0, ZOMBIE.variants - 1)}`, 'walk-0');
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(DEPTH.enemies);
@@ -51,6 +51,10 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
     if (this.dead) return;
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
+    if (dist > ZOMBIE.wakeRange && this.ai !== 'search') {
+      this.setVelocity(0, 0);
+      return;
+    }
     const sees = !player.dead && dist < sightRange && floor.hasLineOfSight(this.x, this.y, player.x, player.y);
     if (sees) this.lastSeen = { x: player.x, y: player.y };
 

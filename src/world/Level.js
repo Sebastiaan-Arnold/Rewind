@@ -2,7 +2,8 @@
  * Reads a Tiled level map into plain data.
  *
  * Map requirements (see README, "Level authoring"):
- *   - Tile layer `ground`.
+ *   - Tile layer `ground` (floors and walls) and optional tile layer `props`
+ *     (furniture, debris and other overlays with transparent backgrounds).
  *   - Object layer `objects` with objects of class:
  *       player  point   player start
  *       enemy   point   property `kind` (string), e.g. zombie
@@ -24,6 +25,7 @@ export function readLevel(scene, key) {
     height: map.height,
     tileSize: map.tileWidth,
     tiles: ground.data.map((row) => row.map((tile) => tile.index)),
+    props: map.getLayer('props')?.data.map((row) => row.map((tile) => tile.index)) ?? null,
     ambient: parseColor(getProp(map, 'ambient'), 0x0e1015),
     playerSpawn: null,
     enemySpawns: [],

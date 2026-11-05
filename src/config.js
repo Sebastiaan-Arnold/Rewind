@@ -37,9 +37,11 @@ export const ZOMBIE = {
   sightRange: 150, // in full light; scaled down in darkness (see STEALTH)
   attackRange: 15, // distance at which the attack wind-up starts
   attackReach: 19, // distance within which the attack connects
-  windupMs: 380,
-  recoverMs: 650,
+  windupMs: 90,
+  recoverMs: 550,
   stunMs: 260,
+  wakeRange: 640, // zombies farther than this from the player do not think
+  variants: 4,
 };
 
 /**
@@ -89,8 +91,9 @@ export const CAMERA = {
 /** Render order. The lightmap multiplies everything below it. */
 export const DEPTH = {
   floor: 0,
-  decals: 1,
-  floorFx: 2,
+  props: 1,
+  decals: 2,
+  floorFx: 3,
   enemies: 9,
   player: 10,
   held: 11,
